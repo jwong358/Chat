@@ -30,6 +30,8 @@
 
 void recvFromClient(int clientSocket);
 int checkArgs(int argc, char *argv[]);
+int sendPDU(int clientSocket, uint8_t * dataBuffer, int lengthOfData);
+int recvPDU(int socketNumber, uint8_t * dataBuffer, int bufferSize);
 
 int main(int argc, char *argv[])
 {
