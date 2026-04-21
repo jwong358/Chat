@@ -23,6 +23,7 @@
 
 #include "networks.h"
 #include "safeUtil.h"
+#include "pduUtil.h"
 
 #define MAXBUF 1024
 #define DEBUG_FLAG 1
@@ -60,7 +61,7 @@ void recvFromClient(int clientSocket)
 	int messageLen = 0;
 	
 	//now get the data from the client_socket
-	if ((messageLen = safeRecv(clientSocket, dataBuffer, MAXBUF, 0)) < 0)
+	if ((messageLen = recvPDU(clientSocket, dataBuffer, MAXBUF)) < 0)
 	{
 		perror("recv call");
 		exit(-1);
@@ -71,7 +72,7 @@ void recvFromClient(int clientSocket)
 		printf("Socket %d: Message received, length: %d Data: %s\n", clientSocket, messageLen, dataBuffer);
 		
 		// send it back to client (just to test sending is working... e.g. debugging)
-		messageLen = safeSend(clientSocket, dataBuffer, messageLen, 0);
+		messageLen = sendPDU(clientSocket, dataBuffer, messageLen);
 		printf("Socket %d: msg sent: %d bytes, text: %s\n", clientSocket, messageLen, dataBuffer);
 	}
 	else
