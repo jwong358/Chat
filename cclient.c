@@ -69,7 +69,7 @@ void sendToServer(int socketNum)
 		exit(-1);
 	}
 
-	printf("Socket %d: sent, Length: %d msg: %s\n", socketNum, sent, buffer);
+	printf("Socket %d: Message sent to server, Length: %d, msg: %s\n", socketNum, sent, buffer);
 }
 
 void recvFromServer(int socketNum)
@@ -90,7 +90,7 @@ void recvFromServer(int socketNum)
 		removeFromPollSet(socketNum);
 		exit(0);
 	}
-	printf("Socket %d: Byte recv: %d message: %s\n", socketNum, recvBytes, buffer);
+	printf("Socket %d: Message received from server, Length: %d, msg: %s\n", socketNum, recvBytes, buffer);
 }
 
 int readFromStdin(uint8_t * buffer)
