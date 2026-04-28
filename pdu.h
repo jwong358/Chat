@@ -1,5 +1,5 @@
-#ifdef __PDUUTIL_H__
-#define __PDUUTIL_H__
+#ifndef __PDU_H__
+#define __PDU_H__
 
 #include <stdint.h>
 

@@ -14,13 +14,17 @@
 #include <stdint.h>
 
 #include "networks.h"
-#include "pduUtil.h"
+#include "pdu.h"
 
 int sendPDU(int clientSocket, uint8_t * dataBuffer, int lengthOfData){
     int total_len = lengthOfData + 2;
     uint16_t net_len = htons(total_len);
 
     uint8_t *temp_buffer = malloc(total_len);
+    if (temp_buffer == NULL) {
+        perror("malloc failed");
+        return -1;
+    }
     memcpy(temp_buffer, &net_len, 2);
     memcpy(temp_buffer + 2, dataBuffer, lengthOfData);
 
@@ -49,7 +53,7 @@ int recvPDU(int socketNumber, uint8_t *dataBuffer, int bufferSize){
     }
 
     uint16_t pdu_len = ntohs(net_len);
-    if (pdu_len > bufferSize) {
+    if ((pdu_len - 2) > bufferSize) {
         fprintf(stderr, "Buffer size is too small for incoming PDU\n");
         return -1;
     }

@@ -23,42 +23,44 @@
 
 #include "networks.h"
 #include "safeUtil.h"
-#include "pduUtil.h"
+#include "pdu.h"
+#include "pollLib.h"
 
 #define MAXBUF 1024
 #define DEBUG_FLAG 1
 
 void sendToServer(int socketNum);
+void recvFromServer(int socketNum);
 int readFromStdin(uint8_t * buffer);
 void checkArgs(int argc, char * argv[]);
-int sendPDU(int clientSocket, uint8_t * dataBuffer, int lengthOfData);
-int recvPDU(int socketNumber, uint8_t * dataBuffer, int bufferSize);
+void clientControl(int socketNum);
+
 
 int main(int argc, char * argv[])
 {
 	int socketNum = 0;         //socket descriptor
 	
 	checkArgs(argc, argv);
-
-	/* set up the TCP Client socket  */
 	socketNum = tcpClientSetup(argv[1], argv[2], DEBUG_FLAG);
-	
-	sendToServer(socketNum);
+
+	setupPollSet();
+	addToPollSet(STDIN_FILENO);
+	addToPollSet(socketNum);
+
+	clientControl(socketNum);
 	
 	close(socketNum);
-	
 	return 0;
 }
 
 void sendToServer(int socketNum)
 {
-	uint8_t buffer[MAXBUF];   //data buffer
-	int sendLen = 0;        //amount of data to send
-	int sent = 0;            //actual amount of data sent/* get the data and send it   */
-	int recvBytes = 0;
-	
+	uint8_t buffer[MAXBUF];  	//data buffer
+	int sendLen = 0;        	//amount of data to send
+	int sent = 0;            	//actual amount of data sent/* get the data and send it   */
+
 	sendLen = readFromStdin(buffer);
-	printf("read: %s string len: %d (including null)\n", buffer, sendLen);
+	printf("Read: %s, string len: %d (including null)\n", buffer, sendLen);
 	
 	sent = sendPDU(socketNum, buffer, sendLen);
 	if (sent < 0)
@@ -67,12 +69,28 @@ void sendToServer(int socketNum)
 		exit(-1);
 	}
 
-	printf("Socket:%d: Sent, Length: %d msg: %s\n", socketNum, sent, buffer);
+	printf("Socket %d: sent, Length: %d msg: %s\n", socketNum, sent, buffer);
+}
+
+void recvFromServer(int socketNum)
+{
+	uint8_t buffer[MAXBUF];   //data buffer
+	int recvBytes = 0;        //amount of data received
 	
-	// just for debugging, recv a message from the server to prove it works.
 	recvBytes = recvPDU(socketNum, buffer, MAXBUF);
+	if (recvBytes < 0)
+	{
+		perror("recv call");
+		exit(-1);
+	}
+	else if (recvBytes == 0)
+	{
+		printf("Server has terminated\n");
+		close(socketNum);
+		removeFromPollSet(socketNum);
+		exit(0);
+	}
 	printf("Socket %d: Byte recv: %d message: %s\n", socketNum, recvBytes, buffer);
-	
 }
 
 int readFromStdin(uint8_t * buffer)
@@ -82,7 +100,7 @@ int readFromStdin(uint8_t * buffer)
 	
 	// Important you don't input more characters than you have space 
 	buffer[0] = '\0';
-	printf("Enter data: ");
+
 	while (inputLen < (MAXBUF - 1) && aChar != '\n')
 	{
 		aChar = getchar();
@@ -107,5 +125,29 @@ void checkArgs(int argc, char * argv[])
 	{
 		printf("usage: %s host-name port-number \n", argv[0]);
 		exit(1);
+	}
+}
+
+void clientControl(int socketNum)
+{
+	int readySocket = 0;
+
+	while (1)
+	{
+		readySocket = pollCall(-1);
+
+		if (readySocket == STDIN_FILENO)
+		{
+			sendToServer(socketNum);
+		}
+		else if (readySocket == socketNum)
+		{
+			recvFromServer(socketNum);
+		}
+		else
+		{
+			printf("Error: poll returned unknown socket number: %d\n", readySocket);
+			exit(-1);
+		}
 	}
 }
